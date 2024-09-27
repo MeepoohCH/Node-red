@@ -2,16 +2,17 @@
 #include <PubSubClient.h>
 #include "DHT.h"
 
-#define LED_PIN 4  // ขาที่ต่อกับ LED
-#define DHTPIN 5   // ขาที่ต่อเซนเซอร์ DHT11
+#define LED_PIN 26  // ขาที่ต่อกับ LED
+#define DHTPIN 25   // ขาที่ต่อเซนเซอร์ DHT11
 #define DHTTYPE DHT11
+#define LDR_PIN 32 // ขาที่ต่อกับ LDR (ขา ADC)
 
 DHT dht(DHTPIN, DHTTYPE);
-const char* ssid = "Mameemeepooh";
-const char* password = "hello11111111";
+const char* ssid = "Mameemeepooh"; // แก้ไข SSID
+const char* password = "hello11111111"; // แก้ไข PASSWORD
 const char* mqtt_server = "broker.hivemq.com";
 const int mqtt_port = 1883;
-const char* mqtt_Client = "Meepooh";
+const char* mqtt_Client = "Meepooh"; // แก้ไข ClientID
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -56,6 +57,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
+  pinMode(LDR_PIN, INPUT); // ตั้งค่า LDR เป็น INPUT
   dht.begin();
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -77,6 +79,7 @@ void loop() {
   if (now - lastMsg > 5000) {  // ส่งข้อมูลทุก 5 วินาที
     lastMsg = now;
 
+    // อ่านค่าจาก DHT
     float h = dht.readHumidity();
     float t = dht.readTemperature();
 
@@ -86,9 +89,12 @@ void loop() {
       return;
     }
 
+    // อ่านค่าจาก LDR
+    int ldrValue = analogRead(LDR_PIN);
+
     // สร้างข้อความ JSON
-    snprintf(msg, 100, "{\"temperature\":%.2f,\"humidity\":%.2f}", t, h);
-    
+    snprintf(msg, 100, "{\"temperature\":%.2f,\"humidity\":%.2f,\"ldrValue\":%d}", t, h, ldrValue);
+
     Serial.print("Publish message: ");
     Serial.println(msg);
     client.publish("Meepooh/in1", msg);  // ส่งข้อมูลไปยัง MQTT
